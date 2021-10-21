@@ -1,0 +1,155 @@
+---
+title: "DS6306 Case Study 01 - Beers and Breweries"
+authors: "Lauren Nelson, Alan Abadzic, Robert Derner"
+date: "10/9/21"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(usmap)
+library(ggplot2)
+library(maps)
+library(ggsn)
+library(plotly)
+library(tidyverse)
+```
+
+# Introduction
+This provides insight and analysis into Beer and Brewery data across the U.S. provided by Budweiser Executives for strategic decision making.  
+
+```{r, echo=FALSE, message = FALSE, warning=FALSE}
+#library(tidyverse)
+beers = read_csv(url("https://raw.githubusercontent.com/BivinSadler/MSDS_6306_Doing-Data-Science/Master/Unit%208%20and%209%20Case%20Study%201/Beers.csv"))
+breweries = read_csv(url("https://raw.githubusercontent.com/BivinSadler/MSDS_6306_Doing-Data-Science/Master/Unit%208%20and%209%20Case%20Study%201/Breweries.csv"))
+
+summary(beers)
+summary(breweries)
+
+head(beers)
+head(breweries)
+```
+
+1.	How many breweries are present in each state?
+# Breweries by State
+```{r, echo=FALSE, message = FALSE, warning=FALSE}
+
+#state_data -- Breweries Filtered by State - joined with FIPS code by State
+#mutate - Join FIPS data with Breweries data
+#trimws - remove Leading/Trailing Whitespace from column(State)
+#fips = State by Abbreviation - ie. TX
+
+state_data = breweries %>% count(State) %>% mutate(fips = fips(trimws(State)))
+
+us_map <- usmap::us_map() # used to add map scale
+
+usmap::plot_usmap(data = state_data, values = "n", labels = T)+
+  labs(fill = 'Breweries by State') + 
+  scale_fill_gradientn(colours=rev(topo.colors(50)),na.value="grey90",
+                       guide = guide_colourbar(barwidth = 25, barheight = 0.6,
+#put legend title on top of legend
+title.position = "top")) +
+
+  # put legend at the bottom, adjust legend title and text font sizes
+  theme(legend.position = "bottom",
+        legend.title=element_text(size=12), 
+        legend.text=element_text(size=10))
+```
+
+
+2.	Merge beer data with the breweries data. Print the first 6 observations and the last six observations to check the merged file.  (RMD only, this does not need to be included in the presentation or the deck.)
+
+
+```{r, echo=FALSE, message = FALSE, warning=FALSE}
+#Merge beer and breweries data - trim whitespace - add in FIPS codes
+full_data = merge(beers,breweries,by.y="Brew_ID",by.x="Brewery_id") %>%
+  mutate(fips = fips(trimws(State)))
+
+#Top 2 States _____#CO | #CA
+
+COStyle = full_data %>% filter(fips == "08") %>% select(State,Style) %>% group_by(State) %>% 
+  count(Style) %>% slice_max(n,n=5) %>% mutate(fips = fips(trimws(State)))
+
+#Colorado Top Beer Styles BarChart
+COStyle %>% 
+  arrange(COStyle$Style) %>% 
+  mutate(Style = factor(Style)) %>% 
+  ggplot(aes(y=Style,x=COStyle$n, fill = COStyle$n)) + geom_bar(stat='identity', show.legend = TRUE) +
+  labs(fill = 'CO Beer Styles') 
+
+
+CAStyle = full_data %>% filter(fips == "06") %>% select(State,Style) %>% group_by(State) %>% 
+  count(Style) %>% slice_max(n,n=5) %>% mutate(fips = fips(trimws(State)))
+
+
+#California Top Beer Styles BarChart
+CAStyle %>% 
+  arrange(CAStyle$Style) %>% 
+  mutate(Style = factor(Style)) %>% 
+  ggplot(aes(y=Style,x=CAStyle$n, fill = CAStyle$n)) + geom_bar(stat='identity', show.legend = TRUE) +
+  labs(fill = 'CA Beer Styles') 
+  
+  
+head(full_data)
+tail(full_data)
+full_data[sample(1:nrow(full_data),10),]
+```
+
+3.	Address the missing values in each column.
+
+Two Datasets, "Beers.csv" and "Breweries.csv" were joined to create a Full Dataset for analysis and insight
+
+Only ABV and IBU are missing Data Values
+
+Important to note: IBU is missing values in  around 42% of the 2,410 total rows of data
+
+**Predictions for IBU specifically, may be skewed
+
+```{r, echo=FALSE, message = FALSE, warning=FALSE}
+#use colSum to sum up the NA's in each column
+full_dataNAs <- as.data.frame(colSums(is.na(full_data)))
+names(full_dataNAs) <- c("Missing Values (NAs)")
+full_dataNAs
+
+summary(full_data)
+
+1005/2410 #Calculate percentage missing data from IBU Column
+```
+
+4.	Compute the median alcohol content and international bitterness unit for each state. Plot a bar chart to compare.
+# Alcohol Content, Bitterness by State - BarChart
+
+```{r, echo=FALSE, message = FALSE, warning=FALSE}
+
+```
+
+IBU Comparison by State 
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+
+```
+
+5a.	Which state has the maximum alcoholic (ABV) beer? 
+#Max ABV = CO
+```{r, echo=FALSE, message = FALSE, warning=FALSE}
+
+```
+
+5b. Which state has the most bitter (IBU) beer?
+#Most Bitter Beer = OR
+```{r, echo=FALSE, message = FALSE, warning=FALSE}
+
+```
+
+6.	Comment on the summary statistics and distribution of the ABV variable.
+
+```{r, echo=FALSE, message = FALSE, warning=FALSE}
+
+```
+
+7.	Is there an apparent relationship between the bitterness of the beer and its alcoholic content? Draw a scatter plot.  Make your best judgment of a relationship and EXPLAIN your answer.
+
+**There appears to a positive correlation between ABV and IBU**
+
+```{r, echo=FALSE, message = FALSE, warning=FALSE}
+```
