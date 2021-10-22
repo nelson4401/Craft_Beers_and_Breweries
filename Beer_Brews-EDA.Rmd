@@ -16,7 +16,7 @@ library(tidyverse)
 ```
 
 # Introduction
-This provides insight and analysis into Beer and Brewery data across the U.S. provided by Budweiser Executives for strategic decision making.1
+This provides insight and analysis into Beer and Brewery data across the U.S. provided by Budweiser Executives for strategic decision making.
 
 ```{r, echo=FALSE, message = FALSE, warning=FALSE}
 #library(tidyverse)
