@@ -120,36 +120,65 @@ summary(full_data)
 # Alcohol Content, Bitterness by State - BarChart
 
 ```{r, echo=FALSE, message = FALSE, warning=FALSE}
+#ABV Comparison by State
+abv = full_data %>% select(State,fips,ABV) %>% group_by(State) %>% 
+  summarise(avg_abv = mean(ABV,na.rm = TRUE),med_abv = median(ABV,na.rm=TRUE), n_valid = sum(!is.na(ABV)),fips = unique(fips))
 
+#BarChart
+abv %>% 
+  arrange(med_abv) %>% 
+  mutate(State = factor(State,State)) %>% 
+  ggplot(aes(y=State,x=med_abv, fill = med_abv)) + geom_bar(stat='identity', width = .5,color = 'black', show.legend = TRUE) +
+  labs(fill = 'Median ABV by State') 
 ```
 
 IBU Comparison by State 
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
+#IBU Comparison by State - BarChart
 
+ibu = full_data %>% select(State,fips,IBU) %>% group_by(State) %>% 
+  summarise(avg_ibu = mean(IBU,na.rm = TRUE),med_ibu = median(IBU,na.rm=TRUE), n_valid = sum(!is.na(IBU)),fips = unique(fips))
+
+ibu %>% 
+  arrange(med_ibu) %>% 
+  mutate(State = factor(State,State)) %>% 
+  ggplot(aes(y=State,x=med_ibu, fill = med_ibu)) + geom_bar(stat='identity', show.legend = TRUE, width = .5, color = "black") +
+  labs(fill = 'Median IBU by State') 
 ```
 
 5a.	Which state has the maximum alcoholic (ABV) beer? 
 #Max ABV = CO
 ```{r, echo=FALSE, message = FALSE, warning=FALSE}
-
+full_data$State[which.max(full_data$ABV)]
 ```
 
 5b. Which state has the most bitter (IBU) beer?
 #Most Bitter Beer = OR
 ```{r, echo=FALSE, message = FALSE, warning=FALSE}
-
+full_data$State[which.max(full_data$IBU)]
 ```
 
 6.	Comment on the summary statistics and distribution of the ABV variable.
 
 ```{r, echo=FALSE, message = FALSE, warning=FALSE}
-
+summary(full_data$ABV)
+hist(full_data$ABV, col = "royalblue", main = "Summary ABV - All 50 States", xlab = "% ABV")
 ```
 
 7.	Is there an apparent relationship between the bitterness of the beer and its alcoholic content? Draw a scatter plot.  Make your best judgment of a relationship and EXPLAIN your answer.
 
-**There appears to a positive correlation between ABV and IBU**
+**There appears to a positive correlation between ABV and IBU however, IBU values may be skewed due to missing IBU data - 42% of total missing**
 
 ```{r, echo=FALSE, message = FALSE, warning=FALSE}
+full_data %>% select(ABV,IBU)
+
+p = full_data %>% 
+  ggplot(mapping = aes(x = ABV,y = IBU, color = ABV)) +
+ # scale_x_discrete(breaks = seq(0,100, by = 10)) +
+  geom_point() +
+  ggtitle("ABV by IBU")
+      show.legend = TRUE
+
+ggplotly (p)
 ```
