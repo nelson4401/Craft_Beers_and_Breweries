@@ -16,7 +16,7 @@ library(tidyverse)
 ```
 
 # Introduction
-This provides insight and analysis into Beer and Brewery data across the U.S. provided by Budweiser Executives for strategic decision making.
+This provides insight and analysis into Beer and Brewery data across the US.  Data was provided by Budweiser Executives for strategic decision making.
 
 ```{r}
 #library(tidyverse)
@@ -129,6 +129,7 @@ names(mediansIBU)[2]<- 'IBU'
 
 #Plotting the median ABV of each state
 p = medians %>%
+  arrange(desc(ABV, State)) %>%
 ggplot(mapping = aes(x=State, y=ABV)) + geom_bar(stat = 'identity', fill = topo.colors(51), width = .5,color = 'black', show.legend = TRUE) + labs(y= "Median ABV", title = "Median ABV (Beers) by State") 
 
 ggplotly(p) #Add interactive data labels
@@ -138,6 +139,7 @@ Bitterness Comparison by State
 ```{r}
 #Plotting the median IBU of each state
 p = mediansIBU %>%
+    arrange(desc(IBU, State)) %>%
 ggplot(mapping = aes(x=State, y=IBU)) + geom_bar(stat = 'identity', fill = topo.colors(50), width = .5,color = 'black') + labs(y= "Median IBU", title = "Median IBU of Beers by State") 
 
 ggplotly(p) #Add interacitve data labels
@@ -195,7 +197,7 @@ Beer_Merge <- merge(x=Beers,y=Breweries, by = "Brewery_id", all.x = TRUE)
 
 lookup = data.frame(abb = state.abb, State = state.name) #makes a data frame with State name and abbreviation.
 
-summary(Beer_Merge$ABV) #see summary statistics of mean, median, mode, and quartlies
+summary(Beer_Merge$ABV) #see summary statistics of mean, median, mode, and quartiles
 #plot the distribution of ABV
 Beer_Merge %>%
   ggplot(aes(x = ABV)) + geom_density(binwidth = .5, colour="black",fill="chartreuse3") +
@@ -228,6 +230,8 @@ correlation_test #showcase statistics
 
 ##Bonus Insights
 
+Top Colorado Beer Styles
+
 ```{r}
 #Top 2 States _____#CO | #CA - Top Beer Styles for Top 2 States 
 
@@ -243,8 +247,11 @@ p = COStyle %>%
   ggtitle("Top Colorado Beer Styles")
 
 ggplotly(p)
+```
 
+Top California Beer Styles
 
+```{r}
 CAStyle = full_data %>% filter(fips == "06") %>% select(State,Style) %>% group_by(State) %>% 
   count(Style) %>% slice_max(n,n=5) %>% mutate(fips = fips(trimws(State)))
 
@@ -260,13 +267,81 @@ ggtitle("Top California Beer Styles")
 ggplotly(p)
   
 ```
-# Ale Classification by Alcohol Content and Bitterness
-```{r, echo=FALSE, message = FALSE, warning=FALSE}
-sub_data = full_data %>% mutate(IPA = grepl('IPA',full_data$Style),Ale  =grepl('Ale',full_data$Style)) %>% filter(IPA | Ale) %>% select(IPA,ABV,IBU)
+Nearest Neighbor (KNN) Prediction for Ale
 
-sub_data = sub_data %>% mutate(Alcohol_by_Volume = scale(ABV),biterness_scale = scale(IBU))
+```{r}
+#Filter data for IPA and Ale 
+Aledata = full_data %>% mutate(IPA = grepl('IPA',full_data$Style), Ale  = grepl('Ale',full_data$Style)) %>% filter(IPA | Ale) %>% select(Ale,IPA,ABV,IBU, Style)
 
-sub_data %>% ggplot(mapping = aes(x=Alcohol_by_Volume,y=biterness_scale,color=IPA)) + geom_point(position = 'jitter')
+Aledata = Aledata %>% mutate(Alcohol_by_Volume = scale(ABV),biterness_scale = scale(IBU)) #Get Ranges of ABV and IBU data
 
+summary(Aledata)
+
+library(tidyverse)
+library(caret)
+library(class)
+
+train = Aledata %>% select(Alcohol_by_Volume,biterness_scale,Ale,ABV,IBU) %>% na.omit()
+
+dim(train) #944 rows
+
+head(train)
+
+trainIndex = sample(seq(1,944,1),100)
+
+train2 = train[trainIndex,]
+
+test2 = train[-trainIndex,]
+
+AleType = test2$Ale
+
+#IBU and ABV
+classifications = knn(train2[,c(4,5)],test2[,c(4,5)],cl = train2$Ale,k = 28)
+CM = table(classifications,AleType)
+CM2 = confusionMatrix(CM)
+CM2
+CM2$overall[1] # accuracy
 ```
+
+# Ale Classification by Alcohol Content and Bitterness
+#Testing for Style of Ale based upon Alcohol Content and Bitterness
+```{r, echo=FALSE, message = FALSE, warning=FALSE}
+#Plot Classification test for Ales based upon ABV and IBU
+p = Aledata %>% ggplot(mapping = aes(x=Alcohol_by_Volume,y=biterness_scale,color=Ale)) + geom_point(position = 'jitter') +
+scale_color_manual(values=c("chartreuse4", "deepskyblue4")) +
+ggtitle("Ale Classification - Alcohol Content and Bitterness")
+ggplotly(p)
+```
+
+# Popular Styles by State
+```{r ,echo=FALSE, message = FALSE, warning=FALSE}
+#Filter Most Popluar Styles by State
+pop_styles = full_data %>% select(Style) %>%
+  count(Style) %>% slice_max(n,n = 10) %>% arrange(desc(n))
+
+head(pop_styles)
+
+
+p = pop_styles %>% 
+  arrange(desc(n)) %>% 
+  ggplot(mapping = aes(y=Style,x=n, fill = Style)) + geom_bar(stat='identity', show.legend = TRUE, width = .9) +
+  labs(fill = 'Beer Styles') +
+ggtitle("Top 10 Beer Styles in the US")
+  
+ggplotly(p)
+```
+
+Cities with Highest Number of Breweries
+```{r}
+#state_data -- Breweries Filtered by State - joined with FIPS code by State
+#mutate - Join FIPS data with Breweries data
+#trimws - remove Leading/Trailing Whitespace from column(State)
+#fips = State by Abbreviation - ie. TX
+
+city_data = breweries %>% group_by(City) %>% count(City) %>% arrange(desc(n)) 
+
+head(city_data)
+```
+
+
 
